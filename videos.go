@@ -1,7 +1,6 @@
 package distrogo
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -34,7 +33,7 @@ type Video struct {
 }
 
 func GetVideo(id string) (Video, error) {
-	url := fmt.Sprintf("https://distrokid.com/videos/watch/%s", id)
+	url := "https://distrokid.com/videos/watch/" + id
 	collector := colly.NewCollector()
 
 	var video Video
