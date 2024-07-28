@@ -14,10 +14,19 @@ const (
 	VIDEO_TYPE_DISTROVID = iota
 )
 
+const (
+	VIDEO_STORE_NONE = iota
+	VIDEO_STORE_BOOMPLAY = iota
+	VIDEO_STORE_APPLEMUSIC = iota
+	VIDEO_STORE_TIDAL = iota
+	VIDEO_STORE_TIKTOKMUSIC = iota
+	VIDEO_STORE_VEVO = iota
+)
+
 type Video struct {
 	ID                 string
 	Type               int
-	Stores             []string
+	Stores             []int
 	Artist             string
 	Uploader           string
 	Title              string
@@ -95,8 +104,28 @@ func GetVideo(id string) (Video, error) {
 		video.Description = el.ChildText("pre")
 	})
 	collector.OnHTML("div.vDspContent", func(el *colly.HTMLElement) {
-		el.ForEach("img.store-icon", func(i int, storeEl *colly.HTMLElement) {
-			video.Stores = append(video.Stores, storeEl.Attr("title"))
+		el.ForEach("img.store-icon:not(.hidden)", func(i int, storeEl *colly.HTMLElement) {
+			var store int = VIDEO_STORE_NONE
+			switch storeEl.Attr("id") {
+				case "dsp-87":
+					store = VIDEO_STORE_BOOMPLAY
+					break
+				case "dsp-41":
+					store = VIDEO_STORE_APPLEMUSIC
+					break
+				case "dsp-42":
+					store = VIDEO_STORE_TIDAL
+					break
+				case "dsp-79":
+					store = VIDEO_STORE_TIKTOKMUSIC
+					break
+				case "dsp-40":
+					store = VIDEO_STORE_VEVO
+					break
+			}
+			if store != VIDEO_STORE_NONE {
+				video.Stores = append(video.Stores, store)
+			}
 		})
 	})
 	collector.OnHTML("div.dvMetadataSection", func(el *colly.HTMLElement) {
