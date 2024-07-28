@@ -1,6 +1,8 @@
 package distrogo
 
 import (
+	"errors"
+	"net/http"
 	"strconv"
 	"strings"
 	"time"
@@ -48,6 +50,7 @@ func GetVideo(id string) (Video, error) {
 
 	var video Video
 	var err error
+	var redirected bool = false
 
 	video.ID = id
 	if strings.HasPrefix(id, "mv-") {
@@ -61,6 +64,10 @@ func GetVideo(id string) (Video, error) {
 	collector.OnError(func(r *colly.Response, e error) {
 		err = e
 	})
+	collector.RedirectHandler = func(r *http.Request, via []*http.Request) error {
+		redirected = true
+		return http.ErrUseLastResponse
+	}
 
 	collector.OnHTML("div.videoMetadataContainer", func(el *colly.HTMLElement) {
 		video.Title = strings.TrimSpace(el.DOM.Find("div[style*=\"line-height: 1.5\"]").Nodes[0].FirstChild.Data)
@@ -153,6 +160,10 @@ func GetVideo(id string) (Video, error) {
 	})
 
 	collector.Visit(url)
+
+	if redirected {
+		return video, errors.New("Video unavailable (redirected).")
+	}
 
 	if video.Type == VIDEO_TYPE_MINIVIDEO && len(video.Artist) == 0 {
 		// If we couldn't get the artist name for a mini-video from recommended videos,
