@@ -17,7 +17,6 @@ const (
 )
 
 const (
-	VIDEO_STORE_NONE = iota
 	VIDEO_STORE_BOOMPLAY = iota
 	VIDEO_STORE_APPLEMUSIC = iota
 	VIDEO_STORE_TIDAL = iota
@@ -28,7 +27,7 @@ const (
 type Video struct {
 	ID                 string
 	Type               int
-	Stores             []int
+	Stores             [5]bool
 	Artist             string
 	Uploader           string
 	Title              string
@@ -116,26 +115,22 @@ func GetVideo(id string) (Video, error) {
 	})
 	collector.OnHTML("div.vDspContent", func(el *colly.HTMLElement) {
 		el.ForEach("img.store-icon:not(.hidden)", func(i int, storeEl *colly.HTMLElement) {
-			var store int = VIDEO_STORE_NONE
 			switch storeEl.Attr("id") {
 				case "dsp-87":
-					store = VIDEO_STORE_BOOMPLAY
+					video.Stores[VIDEO_STORE_BOOMPLAY] = true
 					break
 				case "dsp-41":
-					store = VIDEO_STORE_APPLEMUSIC
+					video.Stores[VIDEO_STORE_APPLEMUSIC] = true
 					break
 				case "dsp-42":
-					store = VIDEO_STORE_TIDAL
+					video.Stores[VIDEO_STORE_TIDAL] = true
 					break
 				case "dsp-79":
-					store = VIDEO_STORE_TIKTOKMUSIC
+					video.Stores[VIDEO_STORE_TIKTOKMUSIC] = true
 					break
 				case "dsp-40":
-					store = VIDEO_STORE_VEVO
+					video.Stores[VIDEO_STORE_VEVO] = true
 					break
-			}
-			if store != VIDEO_STORE_NONE {
-				video.Stores = append(video.Stores, store)
 			}
 		})
 	})
