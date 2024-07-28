@@ -49,7 +49,7 @@ func GetVideo(id string) (Video, error) {
 
 	var video Video
 	var err error
-	var redirected bool = false
+	var customErr error
 
 	video.ID = id
 	if strings.HasPrefix(id, "mv-") {
@@ -64,10 +64,16 @@ func GetVideo(id string) (Video, error) {
 		err = e
 	})
 	collector.RedirectHandler = func(r *http.Request, via []*http.Request) error {
-		redirected = true
+		customErr = errors.New("Video unavailable (redirected).")
 		return http.ErrUseLastResponse
 	}
 
+	collector.OnHTML("title", func(el *colly.HTMLElement) {
+		if (!strings.Contains(el.Text, " - ")) {
+			// No " - " in window title would indicate the video is unavailable.
+			customErr = errors.New("Video unavailable.")
+		}
+	})
 	collector.OnHTML("div.videoMetadataContainer", func(el *colly.HTMLElement) {
 		video.Title = strings.TrimSpace(el.DOM.Find("div[style*=\"line-height: 1.5\"]").Nodes[0].FirstChild.Data)
 		video.Uploader = el.ChildText("div.vUsername")
@@ -156,8 +162,8 @@ func GetVideo(id string) (Video, error) {
 
 	collector.Visit(url)
 
-	if redirected {
-		return video, errors.New("Video unavailable (redirected).")
+	if customErr != nil {
+		return video, customErr
 	}
 
 	if len(video.Artist) == 0 {
