@@ -165,9 +165,9 @@ func GetVideo(id string) (Video, error) {
 		return video, errors.New("Video unavailable (redirected).")
 	}
 
-	if video.Type == VIDEO_TYPE_MINIVIDEO && len(video.Artist) == 0 {
-		// If we couldn't get the artist name for a mini-video from recommended videos,
-		// closest thing we can get to an artist name is the uploader's DistroKid username.
+	if len(video.Artist) == 0 {
+		// If we couldn't get the artist name,
+		// closest thing we can get to one is the uploader's DistroKid username.
 		video.Artist = video.Uploader
 	}
 
