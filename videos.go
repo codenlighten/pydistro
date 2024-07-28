@@ -39,6 +39,7 @@ type Video struct {
 	Thumbnail          string
 	AnimatedThumbnail  string
 	SourceURL          string
+	Recommended        []string
 }
 
 func GetVideo(id string) (Video, error) {
@@ -79,11 +80,14 @@ func GetVideo(id string) (Video, error) {
 			}
 		}
 	})
-	collector.OnHTML("div.relatedVideoCaption", func(el *colly.HTMLElement) {
-		if video.Type == VIDEO_TYPE_MINIVIDEO && len(video.Artist) == 0 {
-			// Get mini-video artist name from recommended videos.
-			video.Artist = el.ChildText("div[style*=\"font-weight: 700\"]")
-		}
+	collector.OnHTML("div.relatedVideosContainer", func(el *colly.HTMLElement) {
+		el.ForEach("a", func(i int, linkEl *colly.HTMLElement) {
+			if video.Type == VIDEO_TYPE_MINIVIDEO && len(video.Artist) == 0 {
+				// Get mini-video artist name from recommended videos.
+				video.Artist = linkEl.ChildText("div[style*=\"font-weight: 700\"]")
+			}
+			video.Recommended = append(video.Recommended, strings.TrimPrefix(linkEl.Attr("href"), "/videos/watch/"))
+		})
 	})
 	collector.OnHTML("div.vMemberSince", func(el *colly.HTMLElement) {
 		el.ForEach("div", func(i int, infoEl *colly.HTMLElement) {
