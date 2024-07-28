@@ -100,9 +100,12 @@ func GetVideo(id string) (Video, error) {
 		})
 	})
 	collector.OnHTML("div.dvMetadataSection", func(el *colly.HTMLElement) {
-		video.ReleaseDateString = strings.TrimPrefix(el.ChildText("div"), "Release date: ")
+		// Trim "Release date:" without a space initially, so if there is no release date available,
+		// the string doesn't have "Release date:" as a value, making time.Parse() fail.
+		video.ReleaseDateString = strings.TrimPrefix(el.ChildText("div"), "Release date:")
+		if len(video.ReleaseDateString) > 0 {
+			video.ReleaseDateString = strings.TrimPrefix(video.ReleaseDateString, " ")
 
-		if (len(video.ReleaseDateString) > 0) {
 			releaseDate, parseErr := time.Parse("Jan _2, 2006", video.ReleaseDateString)
 			err = parseErr
 			video.ReleaseDate = releaseDate
