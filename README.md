@@ -8,6 +8,7 @@ As of now, the wrapper supports the following features:
 
 - **Releases Getters**: Retrieve information about music releases, including title, artist, release date, and more.
 - **Tracks Getters**: Fetch details and statistics for individual tracks, such as duration, ISRC, play counts, and other relevant data.
+- **Video Getters**: Fetch information about music videos, including title, artist, views, description, thumbnails and more.
 
 ## Planned Features
 
@@ -46,6 +47,27 @@ func main() {
   }
 
   fmt.Printf("Found %d releases\n", len(releases))
+}
+```
+
+Using the videos API doesn't require a token:
+```go
+package main
+
+import (
+  "fmt"
+
+  "github.com/szerookii/distrogo"
+)
+
+func main() {
+  videos, err := distrogo.GetVideos([]string{"Rc92Mqy6SWr", "mv-K0ye9T6Xv", "dv-5yW2dTd8N"})
+
+  if err != nil {
+    panic(err)
+  }
+
+  fmt.Printf("Found %d videos\n", len(videos))
 }
 ```
 
