@@ -1,0 +1,44 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+# NOTE: the import package is `pydistro`, but `pydistro` is already taken on
+# PyPI, so the distribution (pip install) name is `pydistrokid`.
+name = "pydistrokid"
+version = "0.1.0"
+description = "Unofficial Python API wrapper for DistroKid (releases, tracks, stats, and videos)."
+readme = "README_PYTHON.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "codenlighten" }]
+keywords = ["distrokid", "music", "api", "wrapper", "isrc", "releases"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = [
+    "httpx>=0.24",
+    "pydantic>=2.0",
+    "beautifulsoup4>=4.10",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0", "pytest-cov", "respx>=0.20"]
+
+[project.urls]
+Homepage = "https://github.com/codenlighten/distrogo"
+Issues = "https://github.com/codenlighten/distrogo/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["pydistro"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
