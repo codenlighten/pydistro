@@ -11,6 +11,12 @@ Use responsibly and in accordance with DistroKid's terms of service.
 
 from __future__ import annotations
 
+from .catalog import (
+    Catalog,
+    CatalogEntry,
+    CheckResult,
+    normalize_title,
+)
 from .client import DistroKid
 from .exceptions import (
     APIError,
@@ -42,6 +48,11 @@ __all__ = [
     "DistroKid",
     "get_video",
     "get_videos",
+    # catalog / matching
+    "Catalog",
+    "CatalogEntry",
+    "CheckResult",
+    "normalize_title",
     # models
     "Release",
     "ReleaseStats",
