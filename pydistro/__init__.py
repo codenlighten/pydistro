@@ -15,6 +15,8 @@ from .catalog import (
     Catalog,
     CatalogEntry,
     CheckResult,
+    MixCheckResult,
+    TrackCheck,
     normalize_title,
 )
 from .client import DistroKid
@@ -40,6 +42,7 @@ from .models import (
     VideoStore,
     VideoType,
 )
+from .tracklist import TracklistItem, parse_tracklist
 from .videos import get_video, get_videos
 
 __version__ = "0.1.0"
@@ -52,7 +55,12 @@ __all__ = [
     "Catalog",
     "CatalogEntry",
     "CheckResult",
+    "MixCheckResult",
+    "TrackCheck",
     "normalize_title",
+    # tracklist parsing
+    "parse_tracklist",
+    "TracklistItem",
     # models
     "Release",
     "ReleaseStats",

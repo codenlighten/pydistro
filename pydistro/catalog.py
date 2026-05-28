@@ -28,6 +28,7 @@ from typing import Callable, Dict, List, Optional, Tuple
 
 from .client import DistroKid
 from .models import Release, Track
+from .tracklist import TracklistItem, parse_tracklist
 
 # Words that, when found inside a bracketed group, mark the whole group as
 # promotional noise to drop. Intentionally excludes version markers.
@@ -152,6 +153,51 @@ class CheckResult:
     @property
     def release_date(self) -> Optional[datetime]:
         return self.entry.release.release_date if self.entry else None
+
+
+@dataclass
+class TrackCheck:
+    """A single tracklist item paired with its check verdict."""
+
+    item: TracklistItem
+    result: "CheckResult"
+
+
+@dataclass
+class MixCheckResult:
+    """Aggregate verdict for checking a whole mix tracklist against DistroKid."""
+
+    checks: List[TrackCheck] = field(default_factory=list)
+
+    @property
+    def total(self) -> int:
+        return len(self.checks)
+
+    @property
+    def matched(self) -> List[TrackCheck]:
+        return [c for c in self.checks if c.result.matched]
+
+    @property
+    def unmatched(self) -> List[TrackCheck]:
+        """Songs in the mix that aren't in your DistroKid catalog."""
+        return [c for c in self.checks if not c.result.matched]
+
+    @property
+    def fuzzy(self) -> List[TrackCheck]:
+        """Matched, but the title differs enough to be worth eyeballing."""
+        return [c for c in self.checks if c.result.matched and c.result.confidence < 1.0]
+
+    @property
+    def missing_isrc(self) -> List[TrackCheck]:
+        return [c for c in self.matched if not c.result.isrc]
+
+    def summary(self) -> str:
+        return (
+            f"{len(self.matched)}/{self.total} matched"
+            f" — {len(self.unmatched)} unmatched"
+            f", {len(self.fuzzy)} fuzzy"
+            f", {len(self.missing_isrc)} missing ISRC"
+        )
 
 
 class Catalog:
@@ -289,6 +335,20 @@ class Catalog:
                 {t: s for t, s in scored}.items(), key=lambda x: -x[1]
             )[:5]
         return result
+
+    def check_tracklist(
+        self, description: "str | List[TracklistItem]", artist: Optional[str] = None
+    ) -> MixCheckResult:
+        """Check every song in a mix tracklist against the catalog.
+
+        Accepts either a raw description string (parsed via ``parse_tracklist``)
+        or pre-parsed items. Runs :meth:`check` per song and aggregates, so you
+        can see at a glance how many songs matched, which are unknown, and which
+        are missing an ISRC to backfill.
+        """
+        items = parse_tracklist(description) if isinstance(description, str) else description
+        checks = [TrackCheck(item=it, result=self.check(it.raw_title, artist=artist)) for it in items]
+        return MixCheckResult(checks=checks)
 
     def _annotate(self, result: CheckResult) -> None:
         """Attach non-fatal advisories (e.g. missing ISRC for backfill)."""
