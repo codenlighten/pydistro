@@ -29,6 +29,14 @@ class AuthError(APIError):
     """A 401/403 from the API, usually a missing or expired bearer token."""
 
 
+class RateLimitError(APIError):
+    """A 429 from the API after retries were exhausted.
+
+    Raised as a distinct type so callers can wait + retry without string-parsing
+    the message (e.g. the DJ Metaverse daily pipeline backing off).
+    """
+
+
 class VideoUnavailableError(DistroKidError):
     """The requested video page is missing, private, or redirected away."""
 

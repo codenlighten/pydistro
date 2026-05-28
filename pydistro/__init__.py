@@ -24,6 +24,7 @@ from .exceptions import (
     APIError,
     AuthError,
     DistroKidError,
+    RateLimitError,
     VideoUnavailableError,
     YouTubeError,
 )
@@ -86,6 +87,7 @@ __all__ = [
     "DistroKidError",
     "APIError",
     "AuthError",
+    "RateLimitError",
     "VideoUnavailableError",
     "YouTubeError",
     "__version__",

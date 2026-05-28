@@ -4,7 +4,7 @@ so no real network calls are made."""
 import httpx
 import pytest
 
-from pydistro import APIError, AuthError, DistroKid
+from pydistro import APIError, AuthError, DistroKid, RateLimitError
 
 
 def make_client(handler) -> DistroKid:
@@ -106,6 +106,16 @@ def test_retries_then_succeeds(monkeypatch):
     dk = make_client(handler)
     assert dk.get_releases() == []
     assert calls["n"] == 2  # one failure + one success
+
+
+def test_rate_limit_raises_distinct_type(monkeypatch):
+    monkeypatch.setattr("pydistro.client.time.sleep", lambda *_: None)
+    dk = make_client(lambda req: httpx.Response(429))
+    with pytest.raises(RateLimitError) as exc:
+        dk.get_releases()
+    assert exc.value.status_code == 429
+    # Still an APIError for callers that catch broadly.
+    assert isinstance(exc.value, APIError)
 
 
 def test_context_manager_closes():

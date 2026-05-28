@@ -18,7 +18,7 @@ from typing import List, Optional
 import httpx
 
 from . import endpoints
-from .exceptions import APIError, AuthError
+from .exceptions import APIError, AuthError, RateLimitError
 from .models import Release, ReleaseStats, Track, TrackStats
 
 DEFAULT_TIMEOUT = 10.0
@@ -87,7 +87,9 @@ class DistroKid:
                 if resp.status_code in (401, 403):
                     raise AuthError(resp.status_code, url)
                 # Retry on 5xx and 429; raise on other 4xx immediately.
-                if resp.status_code >= 500 or resp.status_code == 429:
+                if resp.status_code == 429:
+                    last_exc = RateLimitError(resp.status_code, url)
+                elif resp.status_code >= 500:
                     last_exc = APIError(resp.status_code, url)
                 elif resp.status_code >= 400:
                     raise APIError(resp.status_code, url)

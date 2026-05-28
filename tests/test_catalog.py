@@ -5,8 +5,11 @@ import pytest
 from pydistro import Catalog, CatalogEntry, Release, Track, normalize_title
 
 
-def entry(title: str, artist: str = "Zion Gates Music", isrc: str = "USABC1234567",
+def entry(title: str, artist: str = "Zion Gates Music", isrc: "str | None" = None,
           release_id: int = 1, track_id: int = 1) -> CatalogEntry:
+    # Unique per-track ISRC by default (real ISRCs are unique); pass "" for none.
+    if isrc is None:
+        isrc = f"USABC000{track_id:04d}"
     return CatalogEntry(
         track=Track(id=track_id, title=title, isrc=isrc),
         release=Release(id=release_id, artist=artist, title=title),
@@ -49,7 +52,7 @@ def test_check_pipe_delimited_real_title(catalog):
     assert r.confidence == 1.0
     assert r.official_title == "Neon Kingston Street Reggae Mix"
     assert r.official_artist == "Zion Gates Music"
-    assert r.isrc == "USABC1234567"
+    assert r.isrc == "USABC0000001"  # track_id=1
     assert r.issues == []
 
 
@@ -103,6 +106,43 @@ def test_missing_posts_reports_coverage_gaps(catalog):
 
 
 # --- cache round-trip ------------------------------------------------------ #
+def test_find_by_isrc(catalog):
+    # track_id=1 -> USABC0000001 (case-insensitive lookup).
+    e = catalog.find_by_isrc("usabc0000001")
+    assert e is not None and e.track.title == "Neon Kingston Street Reggae Mix"
+    assert catalog.find_by_isrc("NOPE") is None
+    assert catalog.find_by_isrc("") is None
+
+
+def test_find_by_title_slug_input(catalog):
+    # Filename-slug input (as the DJ Metaverse pipeline passes).
+    hits = catalog.find_by_title("midnight_dub_session")
+    assert hits and hits[0].track.title == "Midnight Dub Session"
+
+
+def test_find_by_title_exact_only(catalog):
+    hits = catalog.find_by_title("Midnight Dub Session", fuzzy=False)
+    assert len(hits) == 1
+    assert catalog.find_by_title("midnite dub sesion", fuzzy=False) == []
+
+
+def test_find_by_title_fuzzy_ranks_best_first(catalog):
+    hits = catalog.find_by_title("midnite dub session")  # typo
+    assert hits[0].track.title == "Midnight Dub Session"
+
+
+def test_hyperfollow_link():
+    from pydistro.models import Link, ReleaseLinks
+    e = CatalogEntry(
+        track=Track(id=1, title="X", isrc="A"),
+        release=Release(id=1, artist="Zion Gates Music", title="X",
+                        links=ReleaseLinks(hyperfollow=Link(href="https://distrokid.com/hyperfollow/x"))),
+    )
+    assert e.hyperfollow == "https://distrokid.com/hyperfollow/x"
+    # No links -> empty string, not an error.
+    assert CatalogEntry(Track(id=2, title="Y"), Release(id=2, artist="a", title="Y")).hyperfollow == ""
+
+
 def test_cache_save_and_load(catalog, tmp_path):
     path = tmp_path / "catalog.json"
     catalog.save(str(path))

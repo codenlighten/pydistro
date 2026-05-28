@@ -117,6 +117,18 @@ class CatalogEntry:
     def norm_artist(self) -> str:
         return normalize_title(self.release.artist)
 
+    @property
+    def hyperfollow(self) -> str:
+        """The release's HyperFollow smart link, if DistroKid provided one.
+
+        DistroKid's API exposes a single smart link (not per-store deep links),
+        so this is the universal "listen everywhere" CTA.
+        """
+        links = self.release.links
+        if links and links.hyperfollow:
+            return links.hyperfollow.href
+        return ""
+
 
 @dataclass
 class CheckResult:
@@ -207,8 +219,47 @@ class Catalog:
         self.entries = entries
         # normalized title -> entries (a title can recur across releases)
         self._index: Dict[str, List[CatalogEntry]] = {}
+        # ISRC -> entry (ISRCs are unique per track)
+        self._by_isrc: Dict[str, CatalogEntry] = {}
         for e in entries:
             self._index.setdefault(e.norm_title, []).append(e)
+            if e.track.isrc:
+                self._by_isrc[e.track.isrc.upper()] = e
+
+    # -- lookups (the DJ Metaverse pipeline / chat agent consume these) ---- #
+    def find_by_isrc(self, isrc: str) -> Optional[CatalogEntry]:
+        """Exact ISRC lookup (case-insensitive). O(1); ideal for the chat agent."""
+        return self._by_isrc.get(isrc.upper()) if isrc else None
+
+    def find_by_title(
+        self, query: str, *, fuzzy: bool = True, limit: int = 5
+    ) -> List[CatalogEntry]:
+        """Find catalog entries matching a title or filename slug.
+
+        Accepts messy input (``golden_chalice_riddim``, ``Golden Chalice
+        (Official Video)``) and normalizes it. Exact normalized matches come
+        first; when ``fuzzy`` is set, near matches follow, ranked by similarity.
+        Returns up to ``limit`` entries (best first).
+        """
+        nq = normalize_title(query)
+        if not nq:
+            return []
+
+        exact = self._index.get(nq, [])
+        if exact and not fuzzy:
+            return exact[:limit]
+
+        scored: List[Tuple[float, CatalogEntry]] = [(1.0, e) for e in exact]
+        if fuzzy:
+            seen_titles = {e.norm_title for e in exact}
+            for norm, group in self._index.items():
+                if norm in seen_titles:
+                    continue
+                score = SequenceMatcher(None, nq, norm).ratio()
+                if score >= SUGGEST_THRESHOLD:
+                    scored.append((score, group[0]))
+        scored.sort(key=lambda x: -x[0])
+        return [e for _, e in scored[:limit]]
 
     # -- construction ------------------------------------------------------ #
     @classmethod
