@@ -61,6 +61,13 @@ def test_parse_ignores_lines_without_timestamps():
     assert items[0].raw_title == "Real Song"
 
 
+def test_parse_preserves_title_brackets_strips_timestamp_brackets():
+    # A bracketed timestamp is consumed; a bracketed title suffix survives.
+    items = parse_tracklist("[0:00] Babylon Falls (Official Audio)\n3:00 Roots (Live)")
+    assert items[0].raw_title == "Babylon Falls (Official Audio)"
+    assert items[1].raw_title == "Roots (Live)"
+
+
 def test_parse_artist_dash_title_kept_whole():
     # The "Artist - Title" split is handled later by check(); parser keeps it.
     items = parse_tracklist("0:00 Zion Gates Music - Lions Roar")

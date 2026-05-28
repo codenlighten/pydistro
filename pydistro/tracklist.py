@@ -27,8 +27,10 @@ from typing import List, Optional
 _TIMESTAMP = re.compile(r"(?:(\d{1,2}):)?(\d{1,2}):(\d{2})")
 # Leading track number: "1.", "01)", "1 -", "#1".
 _LEADING_INDEX = re.compile(r"^\s*#?\d+\s*[\.\)\-:]?\s*")
-# Separators/brackets left dangling around a removed timestamp.
-_EDGE_JUNK = re.compile(r"^[\s\-–—|:\.\[\]\(\)]+|[\s\-–—|:\[\]\(\)]+$")
+# Separators left dangling around a removed timestamp. Brackets are handled
+# separately (only stripped when they actually wrapped the timestamp), so a
+# legitimate "(Official Audio)" / "(Live)" in the title is preserved.
+_EDGE_JUNK = re.compile(r"^[\s\-–—|:\.]+|[\s\-–—|:\.]+$")
 
 
 @dataclass
@@ -63,12 +65,16 @@ def parse_tracklist(description: str) -> List[TracklistItem]:
             continue
 
         seconds = _to_seconds(m.group(1), m.group(2), m.group(3))
-        # Remove the timestamp wherever it sits, then strip a leading index
-        # and any separator/bracket junk left at the edges.
-        title = line[: m.start()] + " " + line[m.end():]
+        # Remove the timestamp wherever it sits. If it was wrapped in brackets
+        # (e.g. "[1:02:33]" or "(0:00)"), consume those too so they don't leak.
+        start, end = m.start(), m.end()
+        if start > 0 and line[start - 1] in "([" and end < len(line) and line[end] in ")]":
+            start -= 1
+            end += 1
+        # Then strip a leading track index and any separator junk at the edges.
+        title = line[:start] + " " + line[end:]
         title = _LEADING_INDEX.sub("", title.strip())
         title = _EDGE_JUNK.sub("", title)
-        title = _EDGE_JUNK.sub("", title)  # second pass for both edges
         title = re.sub(r"\s+", " ", title).strip()
         if not title:
             continue

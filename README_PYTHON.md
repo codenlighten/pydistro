@@ -68,6 +68,52 @@ print("Available on:", [s.name for s in video.available_stores()])
 videos = get_videos(["Rc92Mqy6SWr", "mv-K0ye9T6Xv", "dv-5yW2dTd8N"])
 ```
 
+### Verifying YouTube mixes against your catalog
+
+If your YouTube videos are long-form mixes whose songs are listed (timestamped)
+in the description, pull your catalog once and check the whole tracklist:
+
+```python
+from pydistro import DistroKid, Catalog
+
+with DistroKid("your-bearer-token") as dk:
+    catalog = Catalog.load(dk, cache_path="~/.cache/pydistro/catalog.json")
+
+mix = catalog.check_tracklist(description_text)   # description from YouTube
+print(mix.summary())                              # "12/14 matched — 2 unmatched, ..."
+for c in mix.unmatched:
+    print("Not in catalog:", c.item.raw_title)
+for c in mix.missing_isrc:
+    print("Backfill ISRC for:", c.result.official_title, "->", c.result.isrc)
+```
+
+Every match returns the official title, artist, and **ISRC**, so you can backfill
+ISRCs onto your YouTube records and move from title-matching to ISRC-matching.
+
+## CLI
+
+Installing the package puts a `pydistro` command on your PATH. Catalog commands
+read `$DISTROKID_TOKEN` (or `--token`) and cache the pulled catalog, so repeated
+checks are fast and can even run `--offline` against the cache with no token.
+
+```bash
+export DISTROKID_TOKEN=your-bearer-token
+
+pydistro check-mix --file mix_description.txt     # verify a mix's tracklist
+cat description.txt | pydistro check-mix          # or pipe via stdin
+pydistro check-mix --file mix.txt --json          # machine-readable
+pydistro check-mix --file mix.txt --strict        # nonzero exit if issues found
+
+pydistro check "Lions Roar"                       # check one song title
+pydistro missing --file posted_titles.txt         # catalog coverage gaps
+pydistro releases --json                          # list releases
+pydistro tracks 12345                             # list a release's tracks
+pydistro video Rc92Mqy6SWr                        # scrape a video (no token)
+```
+
+Useful flags on catalog commands: `--cache PATH`, `--no-cache`, `--offline`,
+`--max-age SECONDS`, `--artist NAME` (to disambiguate), `--json`, `--strict`.
+
 ## Errors
 
 ```python

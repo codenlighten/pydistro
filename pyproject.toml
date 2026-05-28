@@ -33,6 +33,9 @@ dependencies = [
 [project.optional-dependencies]
 dev = ["pytest>=7.0", "pytest-cov", "respx>=0.20"]
 
+[project.scripts]
+pydistro = "pydistro.cli:main"
+
 [project.urls]
 Homepage = "https://github.com/codenlighten/distrogo"
 Issues = "https://github.com/codenlighten/distrogo/issues"
