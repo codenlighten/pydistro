@@ -25,6 +25,7 @@ from .exceptions import (
     AuthError,
     DistroKidError,
     VideoUnavailableError,
+    YouTubeError,
 )
 from .models import (
     Icon,
@@ -44,6 +45,7 @@ from .models import (
 )
 from .tracklist import TracklistItem, parse_tracklist
 from .videos import get_video, get_videos
+from .youtube import YouTubeSnippet, extract_video_id, fetch_snippet
 
 __version__ = "0.1.0"
 
@@ -61,6 +63,10 @@ __all__ = [
     # tracklist parsing
     "parse_tracklist",
     "TracklistItem",
+    # youtube
+    "fetch_snippet",
+    "extract_video_id",
+    "YouTubeSnippet",
     # models
     "Release",
     "ReleaseStats",
@@ -81,5 +87,6 @@ __all__ = [
     "APIError",
     "AuthError",
     "VideoUnavailableError",
+    "YouTubeError",
     "__version__",
 ]

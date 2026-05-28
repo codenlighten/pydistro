@@ -101,6 +101,8 @@ export DISTROKID_TOKEN=your-bearer-token
 
 pydistro check-mix --file mix_description.txt     # verify a mix's tracklist
 cat description.txt | pydistro check-mix          # or pipe via stdin
+pydistro check-mix --url https://youtu.be/ID      # fetch description via YouTube Data API
+export YOUTUBE_API_KEY=...                         # needed for --url
 pydistro check-mix --file mix.txt --json          # machine-readable
 pydistro check-mix --file mix.txt --strict        # nonzero exit if issues found
 

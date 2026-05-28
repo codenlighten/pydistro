@@ -31,3 +31,11 @@ class AuthError(APIError):
 
 class VideoUnavailableError(DistroKidError):
     """The requested video page is missing, private, or redirected away."""
+
+
+class YouTubeError(DistroKidError):
+    """A problem fetching data from the YouTube Data API (bad URL, key, or id).
+
+    Subclasses the package base so the CLI catches it uniformly; it is not a
+    DistroKid error per se but a pydistro-side failure.
+    """

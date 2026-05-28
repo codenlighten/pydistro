@@ -78,6 +78,34 @@ def test_offline_without_cache_errors(tmp_path):
         run(["check", "x", "--cache", missing, "--offline"])
 
 
+def test_check_mix_url_fetches_description(cache_file, capsys, monkeypatch):
+    from pydistro.youtube import YouTubeSnippet
+    import pydistro.cli as cli
+
+    def fake_fetch(url_or_id, api_key, **kw):
+        assert api_key == "test-key"
+        return YouTubeSnippet(
+            video_id="JgEquXGIRaE",
+            title="Reggae Mix #5",
+            description="0:00 Midnight Dub Session\n3:42 Lions Roar",
+            channel_title="Zion Gates Music",
+        )
+
+    monkeypatch.setattr(cli, "fetch_snippet", fake_fetch)
+    code = run(["check-mix", "--cache", cache_file, "--offline",
+                "--url", "https://youtu.be/JgEquXGIRaE", "--youtube-api-key", "test-key"])
+    out = capsys.readouterr().out
+    assert code == 0
+    assert "Reggae Mix #5" in out          # title header printed
+    assert "2/2 matched" in out
+
+
+def test_check_mix_url_without_key_errors(cache_file, monkeypatch):
+    monkeypatch.delenv("YOUTUBE_API_KEY", raising=False)
+    with pytest.raises(SystemExit):
+        run(["check-mix", "--cache", cache_file, "--offline", "--url", "JgEquXGIRaE"])
+
+
 def test_version(capsys):
     with pytest.raises(SystemExit) as e:
         run(["--version"])

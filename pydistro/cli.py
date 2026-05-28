@@ -28,6 +28,7 @@ from .catalog import Catalog, MixCheckResult
 from .client import DistroKid
 from .exceptions import DistroKidError
 from .videos import get_video
+from .youtube import fetch_snippet
 
 DEFAULT_CACHE = os.path.join(
     os.environ.get("XDG_CACHE_HOME", os.path.expanduser("~/.cache")),
@@ -124,7 +125,19 @@ def _mix_to_dict(mix: MixCheckResult) -> dict:
 # Commands
 # --------------------------------------------------------------------------- #
 def cmd_check_mix(args: argparse.Namespace) -> int:
-    description = _read_text_input(args)
+    if getattr(args, "url", None):
+        key = args.youtube_api_key or os.environ.get("YOUTUBE_API_KEY")
+        if not key:
+            raise SystemExit(
+                "error: --url needs a YouTube Data API key "
+                "(--youtube-api-key or $YOUTUBE_API_KEY)"
+            )
+        snippet = fetch_snippet(args.url, key)
+        description = snippet.description
+        if not args.json:
+            print(f"# {snippet.title} — {snippet.channel_title}")
+    else:
+        description = _read_text_input(args)
     catalog = _load_catalog(args)
     mix = catalog.check_tracklist(description, artist=args.artist)
 
@@ -265,6 +278,8 @@ def build_parser() -> argparse.ArgumentParser:
     sp = sub.add_parser("check-mix", help="check a mix description's tracklist vs DistroKid")
     add_catalog_opts(sp)
     add_text_input(sp)
+    sp.add_argument("--url", help="YouTube URL/id; fetches the description via the Data API")
+    sp.add_argument("--youtube-api-key", help="YouTube Data API key (or $YOUTUBE_API_KEY)")
     sp.set_defaults(func=cmd_check_mix)
 
     sp = sub.add_parser("check", help="check a single song title vs DistroKid")
